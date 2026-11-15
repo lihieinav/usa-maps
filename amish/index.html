@@ -88,18 +88,15 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 
 .sheetclose{display:none}
 @media (max-width:480px){
-  #map{height:560px;border-radius:0}
+  #map{height:620px;border-radius:0}
   .mapbox{margin-inline:-20px;border-radius:0;padding:6px 0;position:relative}
-  /* צ'יפים בשורה אחת הניתנת לגלילה הצידה, כדי לחסוך גובה */
-  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;-webkit-overflow-scrolling:touch}
-  .chips li{flex:none}
-  .chip{white-space:nowrap}
   /* הכרטיס נפתח מעל המפה כגיליון תחתון */
-  .mapbox #panel{position:absolute;left:6px;right:6px;bottom:6px;z-index:1000;max-height:52%;overflow-y:auto;border-radius:16px;box-shadow:0 -4px 18px rgba(0,0,0,.45)}
-  .mapbox #panel .hint{display:none}
-  .mapbox #panel .sum{margin:0;padding:16px 16px 14px;position:relative}
+  .mapbox{scroll-margin-top:72px}
+  .mapbox #panel{position:absolute;left:6px;right:6px;top:6px;bottom:6px;z-index:1000;overflow-y:auto;border-radius:16px;box-shadow:0 0 0 2px var(--accent),0 8px 28px rgba(0,0,0,.6);-webkit-overflow-scrolling:touch}
+  .mapbox #panel.off{display:none}
+  .mapbox #panel .sum{margin:0;padding:16px 16px 18px;position:relative;min-height:100%}
   .mapbox #panel .sum .big{padding-inline-end:44px}
-  .sheetclose{display:grid;place-items:center;position:absolute;top:8px;inset-inline-end:8px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--sum-tile);color:#fff;font:700 18px "Heebo",sans-serif;cursor:pointer}
+  .sheetclose{display:grid;place-items:center;position:sticky;top:4px;z-index:3;margin-inline-start:auto;margin-bottom:-34px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--sum-tile);color:#fff;font:700 18px "Heebo",sans-serif;cursor:pointer}
   .sheetclose:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .maphint{display:none}
 }
@@ -249,7 +246,7 @@ function add(parent,tag,cls,txt){var e=document.createElement(tag);if(cls)e.clas
 function ulist(parent,items){var u=add(parent,"ul","items");items.forEach(function(x){add(u,"li",null,x);});}
 var current=null;
 function render(id){
-  panel.innerHTML="";
+  panel.innerHTML="";panel.classList.toggle("off",!id);
   if(!id){add(panel,"p","hint","בחרו אטרקציה או עיירה כדי לראות מה יש שם, מה נמצא בסביבה ועם מה כדאי לשלב את הביקור.");return;}
   var d=DATA[id],box=add(panel,"div","sum");
   var cb=add(box,"button","sheetclose","✕");cb.type="button";cb.setAttribute("aria-label","סגירה");cb.addEventListener("click",function(){select(null);});
@@ -268,6 +265,7 @@ function select(id){
   Object.keys(poiLayer).forEach(function(t){map.removeLayer(poiLayer[t]);});
   if(id&&id.charAt(0)==="t"){poiLayer[id]&&poiLayer[id].addTo(map);TOWN[id].rel.forEach(function(n){var e=el("a"+n);if(e)e.classList.add("rel");});}
   render(id);
+  if(id&&mq.matches){setTimeout(function(){mapbox.scrollIntoView({behavior:"smooth",block:"start"});},60);}
   if(!id){home();}
   else if(id==="a4"){map.flyToBounds(zone.getBounds(),{padding:[40,40],paddingBottomRight:pad(),duration:.6});}
   else if(id.charAt(0)==="t"){var pts=[TOWN[id].p];POI.forEach(function(o){if(o.t===id)pts.push(o.p);});map.flyToBounds(L.latLngBounds(pts),{paddingTopLeft:[80,60],paddingBottomRight:mq.matches?[80,Math.round(document.getElementById("map").clientHeight*0.5)]:[80,60],maxZoom:TOWN[id].z,duration:.6});}
