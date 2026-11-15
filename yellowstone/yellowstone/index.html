@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מפת ילוסטון לפי אזורים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* מפה אמיתית (Leaflet + אריחי OpenStreetMap) עם אזורים לחיצים כמצולעים. עיצוב הכרטיסים לפי כלי העונות של האתר. ראו map-work-plan.md */
+:root{
+  --bg:#2b3c60; --panel:#34486f; --ink:#f4f7fb; --muted:#cfd9ea; --line:#506996; --accent:#ff7684; --accent-ink:#1c2a44;
+  --city:#ffffff; --city-ring:#1f2e4d; --sel:#b54b5c; --park:#5fbf8f;
+  --sum-bg:#1f2e4d; --sum-ink:#ffffff; --sum-muted:#cfd9ea; --sum-k:#ff9aa5; --sum-tile:#2e4168;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:transparent;color:var(--ink);font:16px/1.6 "Heebo",system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:4px}
+.wrap{max-width:820px;margin:0 auto;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;padding:24px 20px 20px;box-shadow:0 10px 30px rgba(27,42,74,.10)}
+.wrap::before{content:"";display:block;height:12px;margin:-24px -20px 20px;background:linear-gradient(90deg,#b22234 0 33.3%,#f4f6fa 33.3% 66.6%,#1c3566 66.6% 100%)}
+h1,h2,h3{color:var(--ink)}
+h1{font:700 38px/1.2 "Frank Ruhl Libre",serif;margin:4px 0 8px;text-wrap:balance}
+.kicker{margin:0;color:var(--sum-k);font-weight:500;font-size:16px;letter-spacing:.02em}
+.lede{margin:0 0 18px;color:var(--muted);max-width:60ch;font-size:17px;text-wrap:pretty}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 16px "Heebo",sans-serif;padding:8px 14px;min-height:44px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.chip b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.maplegend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin:0 0 8px;font-size:15px;font-weight:500;color:var(--ink)}
+.maplegend .lg{display:inline-flex;align-items:center;gap:6px}
+.maplegend svg{flex:none;width:18px;height:18px}
+.mapbox{background:var(--bg);border-radius:14px;padding:8px;margin:0 0 8px;position:relative}
+#map{height:640px;border-radius:10px;direction:ltr;background:#dfe6ef;z-index:0}
+.maphint{margin:0 0 16px;font-size:14px;color:var(--muted)}
+/* סימנים */
+.bd{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);display:grid;place-items:center;font:700 17px "Heebo",sans-serif;cursor:pointer;transition:transform .12s}
+.bd:hover{transform:scale(1.12)}
+.bd.on{background:var(--sel);color:#fff;border-color:var(--accent);transform:scale(1.2)}
+.vm{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--city-ring);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.gm{width:16px;height:16px;background:#fff;border:3px solid var(--city-ring);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.em{width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:20px solid var(--accent);filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.leaflet-tooltip.tl{background:transparent;border:0;box-shadow:none;padding:0;color:#1f2e4d;font:700 15px "Heebo",sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff,0 0 5px #fff;white-space:nowrap}
+.leaflet-tooltip.tl::before{display:none}
+.leaflet-tooltip.tl.en{color:#8a1f2e}
+.leaflet-tooltip.tl.rn{font-size:16px}
+.leaflet-tooltip.pl{background:#1f2e4d;color:#fff;border:1px solid #fff;font:700 14px "Heebo",sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4);white-space:nowrap}
+.leaflet-tooltip.pl::before{display:none}
+.leaflet-tooltip{direction:rtl}
+.leaflet-tooltip.hid{visibility:hidden}
+#map.has-sel .leaflet-tooltip.rn{opacity:.65}
+#map.has-sel .leaflet-tooltip.rn.on{opacity:1}
+.leaflet-container{font-family:"Heebo",sans-serif}
+.leaflet-interactive:focus{outline:none}
+.leaflet-interactive:focus-visible{stroke:#ff7684;stroke-width:4}
+.leaflet-bar a:focus-visible,.leaflet-marker-icon:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.edge{position:absolute;z-index:500;background:#1f2e4d;color:#fff;border:1px solid #fff;border-radius:999px;padding:2px 10px;font:700 14px "Heebo",sans-serif;pointer-events:none;white-space:nowrap;direction:rtl}
+/* סיכום */
+.sum{background:var(--sum-bg);color:var(--sum-ink);border-radius:16px;padding:18px;margin:0 0 4px}
+.sum .k{margin:0 0 4px;font-size:14px;font-weight:700;letter-spacing:.06em;color:var(--sum-k)}
+.sum .big{margin:0;font:700 26px/1.3 "Frank Ruhl Libre",serif;color:var(--sum-ink);text-wrap:balance}
+.sum .sub{margin:6px 0 0;color:var(--sum-muted);font-size:16px;text-wrap:pretty}
+.sum h4{margin:16px 0 6px;font-weight:500;font-size:15px;color:var(--sum-muted)}
+.items{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.items li{padding:8px 12px;background:var(--sum-tile);border-radius:8px;font-size:15px}
+.sum p.txt{margin:0;font-size:16px;color:var(--sum-ink);text-wrap:pretty}
+.tipbox{margin-top:16px;background:var(--sum-tile);border-radius:12px;padding:10px 14px;font-size:15px;color:var(--sum-ink)}
+.tipbox b{color:var(--sum-k);font-weight:700}
+.readbtn{display:block;width:280px;max-width:100%;margin:16px auto 0;background:#C8102E;color:#fff;text-decoration:none;font:700 16px "Heebo",sans-serif;border-radius:8px;padding:12px 18px;text-align:center}
+.readbtn:hover{background:#a50d26}
+.hint{color:var(--muted);padding:18px;border:1px dashed var(--line);border-radius:14px;text-align:center;font-size:16px;margin:0}
+.foot{margin:24px 0 0;color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:14px}
+.sheetclose{display:none}
+@media (max-width:480px){
+  h1{font-size:30px}
+  .sum .big{font-size:22px}
+  .chip{padding:6px 10px;font-size:15px}
+  .leaflet-tooltip.tl.rn{font-size:12.5px}
+  .bd{transform:scale(.8)}.bd:hover{transform:scale(.9)}.bd.on{transform:scale(.95)}
+  .vm,.gm{transform:scale(.75)}.em{transform:scale(.8)}
+  .mapbox{margin-inline:-20px;border-radius:0;padding:6px 0;scroll-margin-top:72px}
+  #map{height:620px;border-radius:0}
+  .mapbox #panel{position:absolute;left:6px;right:6px;top:6px;bottom:6px;z-index:1000;overflow-y:auto;border-radius:16px;box-shadow:0 0 0 2px var(--accent),0 8px 28px rgba(0,0,0,.6);-webkit-overflow-scrolling:touch}
+  .mapbox #panel.off{display:none}
+  .mapbox #panel .sum{margin:0;padding:16px 16px 18px;position:relative;min-height:100%}
+  .mapbox #panel .sum .big,.mapbox #panel .sum .k{padding-inline-end:44px}
+  .sheetclose{display:grid;place-items:center;position:sticky;top:4px;z-index:3;margin-inline-start:auto;margin-bottom:-34px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--sum-tile);color:#fff;font:700 18px "Heebo",sans-serif;cursor:pointer}
+  .sheetclose:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .maphint{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="yw">
+  <header>
+    <p class="kicker">מדריך אזורים · פארק ילוסטון</p>
+    <h1>מפת ילוסטון לפי אזורים</h1>
+    <p class="lede">לחצו על אזור במפה, או בחרו מהרשימה, וראו מה יש בו ועם מה כדאי לשלב אותו.</p>
+  </header>
+  <ul class="chips" id="chips" aria-label="רשימת האזורים"></ul>
+  <div class="maplegend" aria-hidden="true">
+    <span class="lg"><svg viewBox="0 0 18 18"><rect x="1.5" y="3" width="15" height="12" rx="2" fill="#2b3c60" fill-opacity=".32" stroke="#fff" stroke-width="1.8"/></svg>אזור (לחיצה לבחירה)</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="5.5" fill="#fff" stroke="#1f2e4d" stroke-width="3"/></svg>כפר או צומת בפארק</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><rect x="3" y="3" width="12" height="12" fill="#fff" stroke="#1f2e4d" stroke-width="3"/></svg>עיירת שער</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><path d="M9 2l7 13H2z" fill="#ff7684" stroke="#fff" stroke-width="1.6"/></svg>כניסה לפארק</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6" fill="#5fbf8f" stroke="#fff" stroke-width="2"/></svg>נקודת עניין (מופיעה בבחירת אזור)</span>
+  </div>
+  <div class="mapbox"><div id="map" role="region" aria-label="מפה של פארק ילוסטון עם שבעה אזורים"></div></div>
+  <p class="maphint">לחיצה נוספת על האזור הנבחר מבטלת את הבחירה.</p>
+  <div id="panel" aria-live="polite"></div>
+  <p class="foot">המפה מבוססת על OpenStreetMap ומיועדת להבנת מבנה הפארק, ולא לניווט. גבולות האזורים משוערים, ומיקומי הסימנים מקורבים. לפני הנסיעה בדקו סטטוס כבישים ואזורים סגורים באתר NPS הרשמי.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+"use strict";
+// כתובת הכתבה וקישורי עוגן: למלא לפני ההטמעה (ריק = בלי כפתור)
+var ARTICLE_URL = "";
+
+/* ---------- גיאומטריה [lat, lon] ---------- */
+// גבול הפארק: OpenStreetMap (ODbL), מפושט. האזורים: חלוקה סכמטית לפי הכתבה, נחתכת בגבול הפארק
+var PARK=[[45.0537,-111.156],[45.0386,-111.1204],[45.0221,-111.0968],[44.1328,-111.098],[44.1326,-110.0011],[44.3239,-110.0001],[44.3268,-110.0121],[44.3195,-110.0269],[44.3379,-110.0676],[44.3525,-110.0726],[44.3644,-110.0681],[44.3894,-110.0683],[44.3986,-110.0744],[44.4043,-110.0669],[44.4211,-110.0606],[44.43,-110.0271],[44.4379,-110.0271],[44.4602,-110.002],[44.504,-110.0013],[44.4894,-110.091],[44.4733,-110.1208],[44.5004,-110.147],[44.5153,-110.1417],[44.532,-110.1695],[44.5445,-110.1726],[44.5469,-110.1598],[44.5538,-110.1536],[44.5522,-110.1348],[44.5591,-110.1314],[44.5706,-110.1113],[44.574,-110.0811],[44.5864,-110.0682],[44.6044,-110.0649],[44.6065,-110.0345],[44.6182,-110.0244],[44.6249,-110.0257],[44.6272,-110.0234],[44.6158,-110.0085],[44.6226,-110.0007],[44.6211,-109.977],[44.629,-109.9684],[44.6277,-109.9524],[44.6369,-109.9081],[44.6487,-109.9053],[44.6526,-109.8798],[44.6709,-109.8691],[44.686,-109.842],[44.708,-109.825],[44.725,-109.838],[44.724,-109.859],[44.735,-109.867],[44.741,-109.883],[44.755,-109.887],[44.766,-109.908],[44.792,-109.93],[44.802,-109.958],[44.804,-109.955],[44.819,-109.957],[44.837,-109.928],[44.854,-109.94],[44.869,-109.935],[44.881,-109.938],[44.895,-109.93],[44.932,-109.927],[44.937,-109.94],[44.973,-109.97],[44.972,-109.996],[44.976,-110.002],[45.028,-110.002],[45.031,-109.998],[45.039,-110.004],[45.046,-110.0],[45.051,-110.005],[45.053,-110.034],[45.045,-110.038],[45.038,-110.051],[45.03,-110.077],[45.03,-110.712],[45.033,-110.712],[45.054,-110.76],[45.067,-110.772],[45.055,-110.805],[45.054,-110.826],[45.046,-110.828],[45.046,-110.837],[45.03,-110.842],[45.03,-110.91],[45.035,-110.914],[45.042,-110.912],[45.053,-110.935],[45.067,-110.929],[45.065,-110.938],[45.076,-110.943],[45.073,-110.95],[45.083,-110.965],[45.081,-110.975],[45.092,-110.982],[45.098,-111.01],[45.091,-111.017],[45.082,-111.019],[45.0805,-111.0304],[45.0664,-111.0565],[45.0757,-111.0701],[45.09,-111.0736],[45.1016,-111.0846],[45.109,-111.1036],[45.1017,-111.1169],[45.1012,-111.132],[45.0908,-111.1344],[45.0855,-111.1301],[45.077,-111.1416],[45.0616,-111.1347],[45.0619,-111.145]];
+var PB=[[44.13,-111.16],[45.11,-109.83]]; // תיבת הפארק
+var X0=-111.5,X1=-109.5,Y0=44.0,Y1=45.3;
+var REG=[
+ {id:1,poly:[[Y0,X0],[Y0,-110.70],[44.505,-110.70],[44.505,X0]],lab:[44.40,-110.88],short:"אולד פיית'פול"},
+ {id:2,poly:[[44.505,X0],[44.505,-110.70],[44.67,-110.70],[44.67,X0]],lab:[44.62,-110.97],short:"אגני הגייזרים"},
+ {id:3,poly:[[44.67,X0],[44.67,-110.58],[44.84,-110.58],[44.84,X0]],lab:[44.775,-110.88],short:"נוריס"},
+ {id:4,poly:[[44.84,X0],[44.84,-110.58],[Y1,-110.58],[Y1,X0]],lab:[44.945,-110.87],short:"מאמות' והצפון"},
+ {id:5,poly:[[44.80,-110.58],[Y1,-110.58],[Y1,X1],[44.80,X1]],lab:[44.93,-110.13],short:"טאואר ולמאר"},
+ {id:6,poly:[[44.60,-110.70],[44.67,-110.70],[44.67,-110.58],[44.80,-110.58],[44.80,X1],[44.60,X1]],lab:[44.70,-110.30],short:"קניון והיידן"},
+ {id:7,poly:[[Y0,-110.70],[Y0,X1],[44.60,X1],[44.60,-110.70]],lab:[44.25,-110.40],short:"לייק, ווסט תמב וגרנט"}
+];
+// pri: עדיפות למיקום תוויות (נמוך = קודם)
+var VIL=[
+ {n:"אולד פיית'פול",p:[44.4604,-110.8282],dirs:["left","top","bottom","right"]},
+ {n:"מדיסון",p:[44.646,-110.862]},
+ {n:"נוריס",p:[44.7261,-110.6983]},
+ {n:"מאמות'",p:[44.9763,-110.7009]},
+ {n:"טאואר-רוזוולט",p:[44.9160,-110.4175]},
+ {n:"קניון וילג'",p:[44.7342,-110.4919]},
+ {n:"לייק וילג'",p:[44.5500,-110.4009]},
+ {n:"ווסט תמב",p:[44.4170,-110.5720],sh:[0,-12],dirs:["right","top","left","bottom"]},
+ {n:"גרנט וילג'",p:[44.39,-110.563],sh:[0,12],dirs:["left","bottom","right","top"]}
+];
+var GATE=[
+ {n:"ווסט ילוסטון",p:[44.6632,-111.1012],sh:[-34,0]},
+ {n:"גרדינר",p:[45.0351,-110.7127],sh:[0,-30],dirs:["right","top","left","bottom"]},
+ {n:"קוק סיטי וסילבר גייט",p:[45.014,-109.96],sh:[0,-14]}
+];
+var ENT=[
+ {n:"כניסה דרומית",p:[44.1325,-110.6647]},
+ {n:"כניסה מערבית",p:[44.6584,-111.0972]},
+ {n:"כניסה צפונית",p:[45.0296,-110.7087],dirs:["left","bottom","right","top"]},
+ {n:"כניסה צפון-מזרחית",p:[45.0034,-110.0013]},
+ {n:"כניסה מזרחית",p:[44.4885,-110.0038]}
+];
+var POI=[
+ {r:1,n:"גייזר לון סטאר",p:[44.4184,-110.8067]},
+ {r:1,n:"בלאק סנד בייסין",p:[44.481,-110.857]},
+ {r:2,n:"המעיין הפריזמטי הגדול",p:[44.5251,-110.8382]},
+ {r:2,n:"פאונטיין פיינט פוט",p:[44.562,-110.808]},
+ {r:3,n:"גייזר סטימבוט",p:[44.7235,-110.7030],hv:"נוריס"},
+ {r:4,n:"טרסות מאמות'",p:[44.966,-110.705]},
+ {r:5,n:"מפל טאואר",p:[44.8938,-110.3872]},
+ {r:5,n:"עמק למאר",p:[44.90,-110.25]},
+ {r:6,n:"ארטיסט פוינט",p:[44.7195,-110.4795]},
+ {r:6,n:"עמק היידן",p:[44.65,-110.45]},
+ {r:7,n:"אגם ילוסטון",p:[44.45,-110.35]},
+ {r:7,n:"בריג' ביי מרינה",p:[44.5328,-110.4367]}
+];
+
+/* ---------- תוכן (ללא שינוי מהגרסה הסכמטית) ---------- */
+var DATA={
+1:{t:"אזור אולד פיית'פול",tag:"הלב הגיאותרמי של הפארק (דרום-מערב)",
+ ch:"גייזרים וטיילות עץ, עם לודג'ים ומרכז מבקרים",
+ hl:["גייזר אולד פיית'פול, שמתפרץ כל 60 עד 110 דקות בערך","אגן הגייזרים העליון, הכולל את חמשת הגייזרים הגדולים","בלאק סנד בייסין עם גייזר קליף, רינבו פול וסאנסט לייק","אולד פיית'פול אין, הלודג' ההיסטורי"],
+ tr:["גייזר לון סטאר: מסלול קל של כ-7.7 ק״מ הלוך וחזור"],
+ co:"כדאי לשלב אותו באותו יום עם האגנים התחתון והמרכזי, כמו ביום הראשון במסלול 3 הימים בכתבה.",
+ st:"הכניסות הקרובות הן המערבית (ווסט ילוסטון) והדרומית. אפשר ללון בלודג'ים באזור או בווסט ילוסטון.",
+ tip:"בקיץ הגיעו מוקדם בבוקר כדי להימנע מהעומס, ובכל מקרה הקפידו להיות במקום לפחות 10 דקות לפני ההתפרצות הצפויה.",anchor:""},
+2:{t:"אגני הגייזרים התחתון והמרכזי",tag:"רצף אגנים בדרך בין מדיסון לאולד פיית'פול",
+ ch:"מעיינות צבעוניים, בוץ מבעבע וגייזרים קטנים",
+ hl:["המעיין הפריזמטי הגדול ואגן מידווי, עם טיילת עץ קצרה","תצפית על המעיין מלמעלה, מחניון מפלי פיירי","פאונטיין פיינט פוט: בריכות, בוץ מבעבע וגייזרים קטנים"],
+ tr:["תצפית על המעיין הפריזמטי: כ-1.9 ק״מ הלוך וחזור, קל","מפלי פיירי: כ-8.6 עד 10.7 ק״מ הלוך וחזור, תלוי בחניון שמתחילים ממנו","פאונטיין פיינט פוט: לולאה של כ-800 מטר"],
+ co:"בדרך כלל מבקרים כאן באותו יום עם אזור אולד פיית'פול, כמו ביום הראשון במסלול 3 הימים.",
+ st:"ווסט ילוסטון היא בסיס נוח ללינה וליציאה לאגנים המערביים.",
+ tip:"החניה בחניון מפלי פיירי מוגבלת מאוד, לכן כדאי להגיע מוקדם.",anchor:""},
+3:{t:"אגן הגייזרים נוריס",tag:"האגן הכי חם והכי מתפרע (מערב-מרכז)",
+ ch:"קרקע לבנה-אפורה, בריכות חומציות וקיטור שעולה מכל סדק",
+ hl:["גייזר סטימבוט, הגייזר הפעיל הגבוה בעולם","פורסלין בייסין: מסלול קצר וצבעוני של כ-1.2 ק״מ","באק בייסין: מסלול של כ-2.4 ק״מ בין יער לבריכות"],
+ tr:["שני שבילי עץ באגן: פורסלין בייסין ובאק בייסין"],
+ co:"האגן נמצא על הדרך בין מדיסון למאמות' ובין מדיסון לקניון, ולכן הוא משתלב כמעט בכל מסלול.",
+ st:"",
+ tip:"ההתפרצויות הגדולות של סטימבוט נדירות ואי אפשר לחזות אותן מראש, לכן אל תתכננו את הביקור סביבן.",anchor:""},
+4:{t:"מאמות' והצפון",tag:"האזור הכי שקט והכי שונה בפארק",
+ ch:"טרסות סלע לבנות וכתומות במקום גייזרים",
+ hl:["המעיינות החמים של מאמות', עם טיילות עץ בטרסות התחתונות","אפר טרס דרייב: כביש חד-סטרי של כ-2.4 ק״מ, שנסגר לרכבים בחורף","איילים קנדיים שמסתובבים בין המבנים ההיסטוריים","רוזוולט ארץ', שער הכניסה הצפונית לפארק"],
+ tr:["טיילות העץ בטרסות מאמות'"],
+ co:"כדאי לשלב עם עמק למאר ביום השלישי: למאר בבוקר, מאמות' בצהריים ורוזוולט ארץ' לסיום.",
+ st:"כניסה צפונית. גרדינר, עיירת השער, נמצאת כ-15 דקות נסיעה ממאמות'. במאמות' עצמה פועלים מלון ובקתות מרבית השנה.",
+ tip:"האיילים נראים רגועים אבל הם חיות פרא, ולכן חשוב לשמור מרחק.",anchor:""},
+5:{t:"טאואר-רוזוולט ועמק למאר",tag:"פראי ומרתק, ואולי הטוב ביותר לחיות בר (צפון-מזרח)",
+ ch:"עמק רחב ופתוח שמכונה ה\"סרנגטי של צפון אמריקה\"",
+ hl:["עמק למאר: זאבים, ביזונים ודובי גריזלי","מפל טאואר, בגובה של כ-40 מטר, שקל להגיע אליו מצומת טאואר"],
+ tr:["צפייה מהכביש בעזרת משקפת, או סיור בוקר מודרך בעמק"],
+ co:"כדאי לשלב עם מאמות', בצפון, ביום השלישי במסלול 3 הימים.",
+ st:"כניסה צפון-מזרחית. קוק סיטי וסילבר גייט קרובות לעמק, וגרדינר מתאימה ללינה בלילה שלפני.",
+ tip:"הזאבים פעילים בעיקר בדמדומים. הגיעו מוקדם בבוקר או לפנות ערב, קחו משקפת וצפו מתוך הרכב.",anchor:""},
+6:{t:"הקניון הגדול ועמק היידן",tag:"לב הפארק (מרכז)",
+ ch:"קניון עמוק ועמק רחב ופתוח",
+ hl:["הקניון הגדול של ילוסטון, עם מפל עליון של כ-33 מטר ותחתון של כ-94 מטר","ארטיסט פוינט, אחת התצפיות המפורסמות על המפל התחתון","עמק היידן: עדרי ביזונים, ולפעמים גם זאבים ודובים"],
+ tr:["ארטיסט פוינט (Canyon Rim South)","תצפית מלמעלה אל המפל התחתון"],
+ co:"היום השני במסלול 3 הימים: מבקרים בקניון ואחריו ממשיכים לעמק היידן, מעט דרומה.",
+ st:"קניון וילג' נמצאת בלב השמיניה, והיא נקודה אסטרטגית ונוחה ללינה.",
+ tip:"אי אפשר לראות את שני המפלים מנקודה אחת. חלק מאזורי עמק היידן נסגרים בעונות מסוימות כדי להגן על הזאבים.",anchor:""},
+7:{t:"אגם ילוסטון, ווסט תמב וגרנט",tag:"האגם והגייזרים על גדתו (דרום-מזרח)",
+ ch:"אגם ענק וקר ואגן גייזרים שנושק למים",
+ hl:["אגם ילוסטון, כ-340 קמ״ר בגובה של כ-2,360 מטר","שייט מודרך של כשעה או השכרת סירה בבריג' ביי מרינה","ווסט תמב: מעיינות חמים שנושקים למי האגם"],
+ tr:[],
+ co:"זו נקודת הפתיחה הטבעית למסלול שמגיע מדרום, כי הכניסה הדרומית מובילה לכאן ישירות מגרנד טיטון.",
+ st:"מי שמגיעים ממזרח יכולים ללון בקודי, ומי שמגיעים מדרום בג'קסון. מהכניסה המזרחית ללייק וילג' נוסעים כשעה.",
+ tip:"המים קרים מאוד ולא מתאימים לרחצה. סירות מנוע דורשות רישיון שמוציאים במקום.",anchor:""}
+};
+
+/* ---------- מפה ---------- */
+var rend=L.svg({padding:0.5});
+var map=L.map("map",{renderer:rend,attributionControl:false,scrollWheelZoom:false,dragging:!L.Browser.mobile,tap:false,zoomSnap:0.5,minZoom:7,maxBounds:[[43.8,-111.8],[45.4,-109.2]],maxBoundsViscosity:1});
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a>"}).addTo(map);
+L.control.attribution({prefix:false}).addTo(map);
+var mapEl=document.getElementById("map");
+var mq=window.matchMedia("(max-width:480px)");
+function overview(anim){if(mq.matches){var c=L.latLngBounds(PB).getCenter();c=L.latLng(c.lat,c.lng-0.05);if(anim)map.flyTo(c,8.5,{duration:.6});else map.setView(c,8.5,{animate:false});}else if(anim)map.flyToBounds(parkB,{padding:[24,24],duration:.6});else map.fitBounds(parkB,{padding:[24,24]});}
+var parkB=L.latLngBounds(PB);
+overview(false);
+
+// קליפ של האזורים לגבול הפארק (SVG clipPath על שכבת הווקטורים)
+var NSV="http://www.w3.org/2000/svg";
+var regionStyle={color:"#ffffff",weight:2,opacity:.95,fillColor:"#2b3c60",fillOpacity:.26};
+var selStyle={color:"#ff7684",weight:3,opacity:1,fillColor:"#b54b5c",fillOpacity:.55};
+var regL={};
+REG.forEach(function(r){
+  var p=L.polygon(r.poly,regionStyle).addTo(map);
+  p.on("click",function(){toggle(r.id);});
+  p.on("mouseover",function(){if(current!==r.id)p.setStyle({fillOpacity:.45});});
+  p.on("mouseout",function(){if(current!==r.id)p.setStyle({fillOpacity:regionStyle.fillOpacity});});
+  var e=p.getElement();e.setAttribute("tabindex","0");e.setAttribute("role","button");e.setAttribute("aria-pressed","false");e.setAttribute("aria-label","אזור "+r.id+": "+DATA[r.id].t);
+  e.addEventListener("keydown",function(ev){if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();toggle(r.id);}});
+  regL[r.id]=p;
+});
+var svgRoot=rend._container, defs=document.createElementNS(NSV,"defs"), cp=document.createElementNS(NSV,"clipPath"), cpath=document.createElementNS(NSV,"path");
+cp.setAttribute("id","parkclip");cp.appendChild(cpath);defs.appendChild(cp);svgRoot.insertBefore(defs,svgRoot.firstChild);
+rend._rootGroup.setAttribute("clip-path","url(#parkclip)");
+function syncClip(){
+  var d="";PARK.forEach(function(a,i){var q=map.latLngToLayerPoint(a);d+=(i?"L":"M")+q.x.toFixed(1)+" "+q.y.toFixed(1);});
+  cpath.setAttribute("d",d+"Z");
+}
+rend.on("update",syncClip);
+// קו גבול הפארק (שכבה נפרדת, לא נחתכת)
+map.createPane("outline").style.zIndex=405;
+L.polygon(PARK,{renderer:L.svg({pane:"outline"}),color:"#1f2e4d",weight:3,opacity:.85,fill:false,interactive:false}).addTo(map);
+
+var labs=[]; // תוויות: {m,t,size,dirs,pri,hideOnTight}
+function mkIcon(cls,size,sh){sh=sh||[0,0];if(mq.matches){sh=[sh[0]*0.6,sh[1]*0.8];}return L.divIcon({className:"",html:'<div class="'+cls+'"></div>',iconSize:[size,size],iconAnchor:[size/2-sh[0],size/2-sh[1]]});}
+function addLab(m,text,cls,size,dirs,pri,tight){
+  m.bindTooltip(text,{permanent:true,direction:dirs[0],className:cls});
+  labs.push({m:m,size:size,dirs:dirs,pri:pri,tight:tight,poi:cls==="pl",name:text});
+  return m;}
+function mkMarker(p,cls,size,title,sh){var m=L.marker(p,{icon:mkIcon(cls,size,sh),title:title,keyboard:false,interactive:false}).addTo(map);return m;}
+var badge={};
+REG.forEach(function(r){
+  var m=L.marker(r.lab,{icon:L.divIcon({className:"",html:'<div class="bd">'+r.id+'</div>',iconSize:[34,34],iconAnchor:[17,17]}),title:"אזור "+r.id+": "+DATA[r.id].t,keyboard:true,riseOnHover:true}).addTo(map);
+  m.on("click",function(){toggle(r.id);});badge[r.id]=m;
+  addLab(m,r.short,"tl rn",34,["bottom","top","right","left"],-1,false);
+});
+GATE.forEach(function(g){var m=mkMarker(g.p,"gm",22,"עיירת שער: "+g.n,g.sh);addLab(m,g.n,"tl gt",22,g.dirs||["right","left","top","bottom"],1,true);});
+ENT.forEach(function(g){var m=mkMarker(g.p,"em",22,g.n);addLab(m,g.n,"tl en",22,g.dirs||["right","left","top","bottom"],2,true);});
+VIL.forEach(function(g){var m=mkMarker(g.p,"vm",22,"כפר או צומת: "+g.n,g.sh);addLab(m,g.n,"tl vl",22,g.dirs||["right","left","top","bottom"],3,true);});
+var poiL=[];
+POI.forEach(function(o){
+  var m=L.circleMarker(o.p,{radius:9,color:"#fff",weight:2.5,fillColor:"#5fbf8f",fillOpacity:1,interactive:false});
+  m.bindTooltip(o.n,{permanent:true,direction:"right",className:"pl"});
+  poiL.push({o:o,m:m,size:22,dirs:["right","left","top","bottom"],pri:0,poi:true});
+});
+
+/* מיקום חכם לתוויות: בוחרים לכל תווית כיוון שלא נוגע בתווית או בסימן אחר. בנייד, תוויות משניות שאין להן מקום מוסתרות */
+function rectOf(e){var r=e.getBoundingClientRect();return {x:r.left-3,y:r.top-3,w:r.width+6,h:r.height+6};}
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function setDir(l,d){
+  var t=l.m.getTooltip(),r=l.size/2+2,o={right:[r,0],left:[-r,0],top:[0,-r],bottom:[0,r]}[d];
+  if(l.dirs.length===1&&d==="bottom"&&!l.poi){o=[0,r-2];}
+  t.options.direction=d;t.options.offset=L.point(o[0],o[1]);t._updatePosition();}
+var placeTimer=0,hiddenVil=null;
+function placeAll(){
+  syncClip();syncEdges();
+  var mr=mapEl.getBoundingClientRect(),obs=[],placed=[];
+  function icon(m){var e=m.getElement&&m.getElement();return e?rectOf(e.firstChild||e):null;}
+  labs.forEach(function(l){var i=icon(l.m);if(i)obs.push({r:i,m:l.m});});
+  poiL.forEach(function(l){if(map.hasLayer(l.m)){var p=map.latLngToContainerPoint(l.m.getLatLng());obs.push({r:{x:mr.left+p.x-12,y:mr.top+p.y-12,w:24,h:24},m:l.m});}});
+  mapEl.querySelectorAll(".leaflet-control,.edge").forEach(function(e){obs.push({r:rectOf(e),m:null});});
+  var act=labs.concat(poiL.filter(function(l){return map.hasLayer(l.m);})).sort(function(a,b){return a.pri-b.pri;});
+  act.forEach(function(l){
+    var t=l.m.getTooltip();if(!t||!t.getElement())return;
+    var el=t.getElement();el.classList.remove("hid");
+    if(l.name&&l.name===hiddenVil&&l.pri===3){el.classList.add("hid");return;}
+    if(l.pri>=2||l.poi){var cq=map.latLngToContainerPoint(l.m.getLatLng()),sz=map.getSize();if(cq.x<26||cq.y<26||cq.x>sz.x-26||cq.y>sz.y-26){el.classList.add("hid");return;}}
+    if(getComputedStyle(el).display==="none")return;
+    var best=null,bs=1e9;
+    for(var i=0;i<l.dirs.length;i++){
+      setDir(l,l.dirs[i]);var b=rectOf(el),s=0;
+      if(b.x<mr.left+2||b.x+b.w>mr.right-2||b.y<mr.top+2||b.y+b.h>mr.bottom-2)s+=5;
+      obs.forEach(function(o){if(o.m!==l.m&&hit(b,o.r))s+=1;});
+      placed.forEach(function(r){if(hit(b,r))s+=1;});
+      if(s<bs){bs=s;best=l.dirs[i];}
+      if(s===0)break;
+    }
+    setDir(l,best);
+    if(bs>0&&l.tight&&mq.matches){el.classList.add("hid");}
+    else placed.push(rectOf(el));
+  });
+}
+function schedulePlace(){clearTimeout(placeTimer);placeTimer=setTimeout(placeAll,30);}
+// תוויות קצה לערים רחוקות (קודי, ג'קסון)
+var edgeC=document.createElement("div"),edgeJ=document.createElement("div");
+edgeC.className="edge";edgeC.textContent="→ קודי";edgeJ.className="edge";edgeJ.textContent="↓ ג'קסון וגרנד טיטון";
+edgeC.setAttribute("aria-hidden","true");edgeJ.setAttribute("aria-hidden","true");
+mapEl.appendChild(edgeC);mapEl.appendChild(edgeJ);
+function syncEdges(){
+  edgeC.style.display=edgeJ.style.display=current?"none":"";
+  var s=map.getSize(),c=map.latLngToContainerPoint([44.43,-110.0]),j=map.latLngToContainerPoint([44.13,-110.667]);
+  edgeC.style.right="8px";edgeC.style.top=Math.max(8,Math.min(s.y-40,c.y))+"px";
+  var jw=edgeJ.offsetWidth||150;edgeJ.style.bottom="8px";edgeJ.style.left=Math.max(8,Math.min(s.x-jw-8,j.x-jw/2))+"px";
+}
+function home(){overview(true);}
+map.on("moveend zoomend",schedulePlace);
+
+/* ---------- צ'יפים וכרטיס ---------- */
+var chips=document.getElementById("chips"),panel=document.getElementById("panel"),chipEls={};
+REG.forEach(function(r){
+  var li=document.createElement("li"),b=document.createElement("button");b.type="button";b.className="chip";b.setAttribute("aria-pressed","false");
+  b.innerHTML="<b>"+r.id+"</b><span></span>";b.lastChild.textContent=DATA[r.id].t;
+  b.addEventListener("click",function(){toggle(r.id);});li.appendChild(b);chips.appendChild(li);chipEls[r.id]=b;
+});
+var mapbox=document.querySelector(".mapbox"),foot=document.querySelector(".foot");
+function place(){if(mq.matches){if(panel.parentNode!==mapbox)mapbox.appendChild(panel);}else if(panel.parentNode!==foot.parentNode){foot.parentNode.insertBefore(panel,foot);}map.invalidateSize();schedulePlace();}
+function add(parent,tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;parent.appendChild(e);return e;}
+function ulist(parent,items){var u=add(parent,"ul","items");items.forEach(function(x){add(u,"li",null,x);});}
+var current=null;
+function render(id){
+  panel.innerHTML="";panel.classList.toggle("off",!id);
+  if(!id){add(panel,"p","hint","בחרו אזור כדי לראות מה יש בו, אילו שבילים מתאימים ועם מה כדאי לשלב אותו. לכל אזור כדאי להקדיש בין חצי יום ליום שלם.");return;}
+  var d=DATA[id],box=add(panel,"div","sum");
+  var cb=add(box,"button","sheetclose","✕");cb.type="button";cb.setAttribute("aria-label","סגירה");cb.addEventListener("click",function(){select(null);});
+  add(box,"p","k","אזור "+id+" · "+d.tag);
+  add(box,"p","big",d.t);
+  add(box,"p","sub",d.ch);
+  add(box,"h4",null,"מה יש בו");ulist(box,d.hl);
+  if(d.tr.length){add(box,"h4",null,"שבילים");ulist(box,d.tr);}
+  add(box,"h4",null,"מה לשלב");add(box,"p","txt",d.co);
+  if(d.st){add(box,"h4",null,"כניסה ולינה");add(box,"p","txt",d.st);}
+  if(d.tip){var tb=add(box,"div","tipbox");add(tb,"b",null,"טיפ: ");tb.appendChild(document.createTextNode(d.tip));}
+  if(ARTICLE_URL){var a=add(box,"a","readbtn","לקריאה בכתבה");a.target="_blank";a.rel="noopener";a.href=ARTICLE_URL+(d.anchor?"#"+d.anchor:"");}
+}
+function toggle(id){select(current===id?null:id);}
+function regBounds(r){
+  var la=r.poly.map(function(p){return p[0];}),lo=r.poly.map(function(p){return p[1];});
+  return L.latLngBounds([[Math.max(Math.min.apply(0,la),PB[0][0]),Math.max(Math.min.apply(0,lo),PB[0][1])],[Math.min(Math.max.apply(0,la),PB[1][0]),Math.min(Math.max.apply(0,lo),PB[1][1])]]);}
+function select(id){
+  current=id;
+  REG.forEach(function(r){var on=r.id===id;
+    regL[r.id].setStyle(on?selStyle:regionStyle);if(on)regL[r.id].bringToFront();
+    regL[r.id].getElement().setAttribute("aria-pressed",on?"true":"false");
+    chipEls[r.id].setAttribute("aria-pressed",on?"true":"false");
+    var m=badge[r.id],be=m.getElement();if(be)be.firstChild.classList.toggle("on",on);
+    var te=m.getTooltip()&&m.getTooltip().getElement();if(te)te.classList.toggle("on",on);});
+  mapEl.classList.toggle("has-sel",!!id);
+  poiL.forEach(function(l){if(map.hasLayer(l.m))map.removeLayer(l.m);});
+  hiddenVil=null;if(id){poiL.forEach(function(l){if(l.o.r===id){l.m.addTo(map);if(l.o.hv)hiddenVil=l.o.hv;}});}
+  labs.forEach(function(l){if(l.pri===3)l.m.setOpacity(l.name===hiddenVil?0:1);});
+  render(id);
+  if(id&&mq.matches){setTimeout(function(){mapbox.scrollIntoView({behavior:"smooth",block:"start"});},60);}
+  if(!id)home();else map.flyToBounds(regBounds(REG[id-1]),{padding:[30,30],maxZoom:10.5,duration:.6});
+  schedulePlace();
+}
+render(null);
+place();if(mq.addEventListener){mq.addEventListener("change",place);}else if(mq.addListener){mq.addListener(place);}
+window.addEventListener("resize",function(){map.invalidateSize();if(!current)overview(false);schedulePlace();});
+syncClip();
+})();
+</script>
+<script>
+// מעדכן את הדף המארח בגובה הכלי (סוג ההודעה: usa-yellowstone-height)
+(function(){var last=0;function send(){var w=document.querySelector(".wrap");var h=Math.ceil(w.getBoundingClientRect().bottom+window.scrollY)+8;if(h!==last){last=h;parent.postMessage({type:"usa-yellowstone-height",h:h},"*");}}
+if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector(".wrap"));}window.addEventListener("load",send);document.addEventListener("click",function(){setTimeout(send,50);});send();})();
+</script>
+</body>
+</html>
