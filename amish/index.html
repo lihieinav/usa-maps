@@ -86,7 +86,23 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 @media (prefers-reduced-motion:reduce){.zone{transition:none}}
 
 
-@media (max-width:480px){#map{height:440px}.mapbox{margin-inline:-20px;border-radius:0;padding:6px 0}#map{border-radius:0}}
+.sheetclose{display:none}
+@media (max-width:480px){
+  #map{height:560px;border-radius:0}
+  .mapbox{margin-inline:-20px;border-radius:0;padding:6px 0;position:relative}
+  /* צ'יפים בשורה אחת הניתנת לגלילה הצידה, כדי לחסוך גובה */
+  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;-webkit-overflow-scrolling:touch}
+  .chips li{flex:none}
+  .chip{white-space:nowrap}
+  /* הכרטיס נפתח מעל המפה כגיליון תחתון */
+  .mapbox #panel{position:absolute;left:6px;right:6px;bottom:6px;z-index:1000;max-height:52%;overflow-y:auto;border-radius:16px;box-shadow:0 -4px 18px rgba(0,0,0,.45)}
+  .mapbox #panel .hint{display:none}
+  .mapbox #panel .sum{margin:0;padding:16px 16px 14px;position:relative}
+  .mapbox #panel .sum .big{padding-inline-end:44px}
+  .sheetclose{display:grid;place-items:center;position:absolute;top:8px;inset-inline-end:8px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--sum-tile);color:#fff;font:700 18px "Heebo",sans-serif;cursor:pointer}
+  .sheetclose:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .maphint{display:none}
+}
 </style>
 </head>
 <body>
@@ -226,6 +242,9 @@ function mkChip(parent,id,num){var li=document.createElement("li"),b=document.cr
 ORDER_A.forEach(function(id){mkChip(document.getElementById("chipsA"),id,id.slice(1));});
 ORDER_T.forEach(function(id){mkChip(document.getElementById("chipsT"),id,0);});
 var panel=document.getElementById("panel");
+var mq=window.matchMedia("(max-width:480px)"),mapbox=document.querySelector(".mapbox"),foot=document.querySelector(".foot");
+function place(){if(mq.matches){if(panel.parentNode!==mapbox)mapbox.appendChild(panel);}else if(panel.parentNode!==foot.parentNode){foot.parentNode.insertBefore(panel,foot);}map.invalidateSize();}
+function pad(){return mq.matches?[40,Math.round(document.getElementById("map").clientHeight*0.5)]:[0,0];}
 function add(parent,tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;parent.appendChild(e);return e;}
 function ulist(parent,items){var u=add(parent,"ul","items");items.forEach(function(x){add(u,"li",null,x);});}
 var current=null;
@@ -233,6 +252,7 @@ function render(id){
   panel.innerHTML="";
   if(!id){add(panel,"p","hint","בחרו אטרקציה או עיירה כדי לראות מה יש שם, מה נמצא בסביבה ועם מה כדאי לשלב את הביקור.");return;}
   var d=DATA[id],box=add(panel,"div","sum");
+  var cb=add(box,"button","sheetclose","✕");cb.type="button";cb.setAttribute("aria-label","סגירה");cb.addEventListener("click",function(){select(null);});
   add(box,"p","k",d.k);add(box,"p","big",d.t);add(box,"p","sub",d.ch);
   add(box,"h4",null,"מה יש שם");ulist(box,d.hl);
   add(box,"h4",null,"מה לשלב");add(box,"p","txt",d.co);
@@ -249,11 +269,12 @@ function select(id){
   if(id&&id.charAt(0)==="t"){poiLayer[id]&&poiLayer[id].addTo(map);TOWN[id].rel.forEach(function(n){var e=el("a"+n);if(e)e.classList.add("rel");});}
   render(id);
   if(!id){home();}
-  else if(id==="a4"){map.flyToBounds(zone.getBounds(),{padding:[40,40],duration:.6});}
-  else if(id.charAt(0)==="t"){var pts=[TOWN[id].p];POI.forEach(function(o){if(o.t===id)pts.push(o.p);});map.flyToBounds(L.latLngBounds(pts),{padding:[80,60],maxZoom:TOWN[id].z,duration:.6});}
-  else{map.flyTo(ATT[id.slice(1)].pos,ATT[id.slice(1)].z,{duration:.6});}
+  else if(id==="a4"){map.flyToBounds(zone.getBounds(),{padding:[40,40],paddingBottomRight:pad(),duration:.6});}
+  else if(id.charAt(0)==="t"){var pts=[TOWN[id].p];POI.forEach(function(o){if(o.t===id)pts.push(o.p);});map.flyToBounds(L.latLngBounds(pts),{paddingTopLeft:[80,60],paddingBottomRight:mq.matches?[80,Math.round(document.getElementById("map").clientHeight*0.5)]:[80,60],maxZoom:TOWN[id].z,duration:.6});}
+  else{var ap=ATT[id.slice(1)].pos;map.flyToBounds(L.latLngBounds([ap,ap]),{maxZoom:ATT[id.slice(1)].z,paddingBottomRight:pad(),duration:.6});}
 }
 render(null);
+place();if(mq.addEventListener){mq.addEventListener("change",place);}else if(mq.addListener){mq.addListener(place);}
 window.addEventListener("resize",function(){map.invalidateSize();if(!current)map.fitBounds(overview,{padding:[56,56]});});
 })();
 </script>
