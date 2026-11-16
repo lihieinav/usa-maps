@@ -48,6 +48,16 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 .bd:hover{transform:scale(1.12)}
 .bd.on{background:var(--sel);color:#fff;border-color:var(--accent);transform:scale(1.25)}
 .bd.rel{border-color:#ffd54a}
+.bd.ox,.bd.lg{width:30px;height:30px;font-size:18px}
+.bd svg,.chip b svg{display:block;fill:currentColor}
+.bd.lg svg{width:18px;height:18px}
+.chip b.lg svg{width:14px;height:14px}
+.leaflet-tooltip.hv{font-size:15px;white-space:nowrap;pointer-events:none;direction:rtl}
+.bd.ox{background:#8ec5ff;color:#16315a}
+.bd.lg{background:#ffd54a;color:#4a3a00}
+.bd.ox.on,.bd.lg.on{background:var(--sel);color:#fff;border-color:var(--accent)}
+.chip b.ox{background:#8ec5ff;color:#16315a}
+.chip b.lg{background:#ffd54a;color:#4a3a00}
 .tw{width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid var(--city-ring);box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer}
 .tw.on{background:var(--accent);border-color:#fff;box-shadow:0 0 0 3px var(--sel)}
 .leaflet-tooltip.tl{background:transparent;border:0;box-shadow:none;padding:0;color:#1f2e4d;font:700 16px "Heebo",sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff,0 0 5px #fff}
@@ -107,20 +117,26 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
   <header>
     <p class="kicker">מדריך מיקומים · ארץ האמיש, מחוז לנקסטר</p>
     <h1>מפת ארץ האמיש</h1>
-    <p class="lede">לחצו על אטרקציה או עיירה במפה או ברשימה, כדי לראות מה יש שם ומה נמצא בסביבה. המספרים זהים למספרי האטרקציות בכתבה.</p>
+    <p class="lede">לחצו על אטרקציה או עיירה במפה או ברשימה, כדי לראות מה יש שם ומה נמצא בסביבה. המספרים זהים למספרי האטרקציות בכתבה. עוד אטרקציות ואפשרויות לינה מסומנות בצבע אחר ובלי מספר.</p>
   </header>
   <p class="grp">אטרקציות</p>
   <ul class="chips" id="chipsA" aria-label="רשימת האטרקציות"></ul>
   <p class="grp">עיירות</p>
   <ul class="chips" id="chipsT" aria-label="רשימת העיירות"></ul>
+  <p class="grp">עוד אטרקציות</p>
+  <ul class="chips" id="chipsO" aria-label="רשימת האטרקציות הנוספות"></ul>
+  <p class="grp">לינה</p>
+  <ul class="chips" id="chipsL" aria-label="רשימת אפשרויות הלינה"></ul>
   <div class="maplegend" aria-hidden="true">
     <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.5" fill="#ff7684" stroke="#fff" stroke-width="1.8"/></svg>אטרקציה (המספר כמו בכתבה)</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.5" fill="#8ec5ff" stroke="#fff" stroke-width="1.8"/></svg>עוד אטרקציה (בלי מספר)</span>
+    <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.5" fill="#ffd54a" stroke="#fff" stroke-width="1.8"/><g transform="translate(3.6 3.6) scale(.45)" fill="#4a3a00"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></g></svg>לינה</span>
     <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="5.5" fill="#fff" stroke="#1f2e4d" stroke-width="3"/></svg>עיירה</span>
     <span class="lg"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6" class="poi" fill="#5fbf8f" stroke="#fff" stroke-width="2"/></svg>נקודת עניין (מופיעה בבחירת עיירה)</span>
     <span class="lg"><svg viewBox="0 0 18 18"><ellipse cx="9" cy="9" rx="8" ry="5.5" fill="#5fbf8f" fill-opacity=".35" stroke="#5fbf8f" stroke-width="1.5" stroke-dasharray="3 2"/></svg>אזור כללי</span>
   </div>
   <div class="mapbox"><div id="map" role="region" aria-label="מפה של ארץ האמיש במחוז לנקסטר"></div></div>
-  <p class="maphint">התצוגה הראשונית מציגה את הכפרים במזרח. לנקסטר (מערבה) ואפראטה (צפונה) נמצאות מחוץ לתצוגה. בחרו אותן ברשימה או התרחקו בכפתור -. לחיצה נוספת על הפריט הנבחר מחזירה את התצוגה הכללית.</p>
+  <p class="maphint">התצוגה הראשונית מציגה את הכפרים במזרח. לנקסטר (מערבה), ליטיץ ואפראטה (צפונה) ועוד כמה אתרים נוספים נמצאים מחוץ לתצוגה. בחרו אותן ברשימה או התרחקו בכפתור -. לחיצה נוספת על הפריט הנבחר מחזירה את התצוגה הכללית.</p>
   <div id="panel" aria-live="polite"></div>
   <p class="foot">המפה מבוססת על OpenStreetMap ומיועדת להבנת המיקומים, ולא לניווט. מיקומי הסימנים מקורבים, והאזור הירוק (כרכרות) כללי בלבד. שעות פתיחה, ימי פעילות ומחירים משתנים, ולכן כדאי לבדוק באתרים הרשמיים לפני ההגעה.</p>
 </div>
@@ -139,20 +155,36 @@ var ATT={
  3:{pos:[40.0075,-76.1862],short:"כפר האמיש",z:14},
  4:{pos:[40.0335,-76.1785],short:"כרכרות",z:14,zoneR:900},
  5:{pos:[40.1924,-76.1550],short:"גרין דרגון",z:14},
- 6:{pos:[40.0402,-76.1107],short:"קיטשן קטל",z:14}
+ 6:{pos:[40.0402,-76.1107],short:"קיטשן קטל",z:14},
+ 7:{pos:[39.9830,-76.1607],short:"רכבת סטרסבורג",z:14.5,off:[0,-21]},
+ 8:{pos:[39.9822,-76.1606],short:"מוזיאון הרכבות",z:14.5,off:[0,21]}
+};
+/* אייקון מלון (Material Design Icons "hotel", רישיון Apache 2.0) */
+var HOTEL='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>';
+/* עוד אטרקציות ולינה: מיקום לפי כתובת באתר הרשמי וקואורדינטות OpenStreetMap (ראו map-fact-check.md) */
+var EXTRA={
+ o1:{pos:[40.0925,-76.2803],short:"לנדיס ואלי",z:14,g:"o",sym:"+"},
+ o2:{pos:[40.1834,-76.1887],short:"מנזר אפראטה",z:14,g:"o",sym:"+"},
+ o3:{pos:[40.0435,-76.3292],short:"וויטלנד",z:14,g:"o",sym:"+"},
+ o4:{pos:[40.1118,-76.5030],short:"מבשלת בובס",z:14,g:"o",sym:"+"},
+ l1:{pos:[39.9855,-76.1515],short:"רד קבוז מוטל",z:14.5,g:"l",sym:HOTEL,core:true},
+ l2:{pos:[40.0532,-76.2528],short:"האמפטון אין לנקסטר",z:14,g:"l",sym:HOTEL}
 };
 var TOWN={
  t1:{n:"בירד אין הנד",p:[40.0387,-76.1822],rel:[2,4],z:14.5,dir:"left"},
  t2:{n:"אינטרקורס",p:[40.0386,-76.1076],rel:[6],z:14.5,dir:"bottom"},
  t3:{n:"רונקס",p:[40.0262,-76.1686],rel:[3],z:13.5},
- t4:{n:"לנקסטר",p:[40.0380,-76.3057],rel:[1],z:13.5,edge:true}
+ t4:{n:"לנקסטר",p:[40.0380,-76.3057],rel:[1],z:13.5,edge:true},
+ t5:{n:"ליטיץ",p:[40.1571,-76.3072],rel:[],z:14,edge:true,dir:"left"}
 };
 var POI=[
  {t:"t1",n:"שוק האיכרים",p:[40.0380,-76.1777],d:"top"},
  {t:"t1",n:"בירד אין הנד סטייג'",p:[40.0379,-76.1743],d:"bottom"},
  {t:"t2",n:"אולד קאנטרי סטור",p:[40.0385,-76.1106],d:"left"},
  {t:"t3",n:"מילרס סמורגסבורד",p:[40.0170,-76.1639]},
- {t:"t4",n:"לנקסטר סנטרל מרקט",p:[40.0383,-76.3065]}
+ {t:"t4",n:"לנקסטר סנטרל מרקט",p:[40.0383,-76.3065]},
+ {t:"t5",n:"מאפיית סטרגיס",p:[40.1565,-76.3013],d:"right"},
+ {t:"t5",n:"וילבור צ'וקולט",p:[40.1586,-76.3068],d:"top"}
 ];
 
 /* ---------- content (נוסח מתוך הכתבה, בקיצור) ---------- */
@@ -196,11 +228,47 @@ t3:{k:"עיירה · דרום הציר",t:"רונקס (Ronks)",ch:"בין הכפ
 t4:{k:"עיר · מערבה לכפרים",t:"לנקסטר (Lancaster)",ch:"העיר המרכזית, וגם שמו של המחוז",
  hl:["שוק האיכרים לנקסטר סנטרל מרקט: שוק מקורה במרכז העיר, פועל מאז 1730 לפי האתר הרשמי","מבנים היסטוריים, מסעדות, בתי קפה וחנויות עצמאיות"],
  co:"בית וחוות האמיש (1) ממוקמים ממזרח לעיר, בדרך לכפרים.",
- tip:"שעות הפעילות של השוק מוגבלות לימים מסוימים בשבוע. כדאי לבדוק אותן לפני הביקור.",anchor:""}
+ tip:"שעות הפעילות של השוק מוגבלות לימים מסוימים בשבוע. כדאי לבדוק אותן לפני הביקור.",anchor:""},
+a7:{k:"אטרקציה 7 · סטרסבורג",t:"רכבת הקיטור של סטרסבורג (Strasburg Rail Road)",ch:"נסיעה ברכבת עם קטר קיטור בין שדות חקלאיים",
+ hl:["נסיעה של כ-45 דקות עד העיירה פרדייז וחזרה","הסברים מוקלטים על האזור","כמה סוגי כרטיסים: מושבים רגילים, קרון פתוח, מחלקה ראשונה וקרון אוכל"],
+ co:"מעבר לכביש נמצא מוזיאון הרכבות (8), ולצד המסילה אפשר ללון ברד קבוז מוטל.",
+ tip:"כדאי לבדוק מראש את לוח הזמנים ואת אפשרויות ההזמנה באתר הרשמי.",anchor:""},
+a8:{k:"אטרקציה 8 · סטרסבורג",t:"מוזיאון הרכבות של פנסילבניה (Railroad Museum of Pennsylvania)",ch:"מוזיאון בניהול המדינה, מעבר לכביש מהרכבת",
+ hl:["אוסף גדול של קטרים וקרונות היסטוריים מהמאה ה-19 וה-20","האוסף ההיסטורי של חברת פנסילבניה ריילרוד","קטר הקיטור רוקט משנת 1838"],
+ co:"קל לשלב עם הרכבת (7) ביום אחד: ברכבת נוסעים בנוף הכפרי, ובמוזיאון רואים מקרוב את הקטרים והקרונות.",
+ tip:"מדובר בשני אתרים שמנוהלים בנפרד, ולכן כדאי לבדוק מראש כרטיסים ופרטי כניסה לכל אחד מהם.",anchor:""},
+t5:{k:"עיירה · צפון המחוז",t:"ליטיץ (Lititz)",ch:"עיירה קטנה שמציעה קצב שונה מהחוות והכפרים",
+ hl:["מאפיית הבייגלה ג'וליוס סטרגיס: סיור שבו רואים את המאפייה המקורית ומנסים לעצב בייגלה","חנות הממתקים וילבור צ'וקולט, ואיתה מטבח שבו מכינים ממתקים בעבודת יד","פארק ליטיץ ספרינגס, עם נחל שמקורו במעיין","טיול ברגל ברחוב הראשי: חנויות בוטיק, גלריות, בתי קפה ומסעדות"],
+ co:"מתאימה ליום נפרד של טיול רגוע ולמי שרוצים משהו שונה מהכפרים והחוות.",
+ tip:"שעות הפתיחה של המאפייה לא עקביות בין המקורות, ולכן כדאי לבדוק אותן מראש.",anchor:""},
+o1:{k:"עוד אטרקציות · צפון לנקסטר",t:"לנדיס ואלי (Landis Valley Village & Farm Museum)",ch:"מוזיאון חי של התרבות הפנסילבנית-גרמנית",
+ hl:["מבנים היסטוריים רבים, בהם בית מרזח, נפח נשקים וסדנת פח","מדריכים בתלבושות תקופתיות ובעלי מלאכה שמדגימים מלאכות מסורתיות ובישול על אש גלויה","זנים עתיקים של צמחים, ובהם זנים ממשפחות אמיש ומנוניטים מקומיות"],
+ co:"המוזיאון שייך למערכת המוזיאונים של המדינה וממליץ להקדיש לביקור שעתיים עד שלוש שעות.",
+ tip:"",anchor:""},
+o2:{k:"עוד אטרקציות · אפראטה",t:"מנזר אפראטה (Ephrata Cloister)",ch:"קהילה דתית שנוסדה ב-1732, אתר היסטורי לאומי",
+ hl:["קהילה נוצרית נזירית, עם אחים ואחיות רווקים ולצדם קהילה נשואה","ידועה במוזיקה שחיברה בעצמה, בקליגרפיה גרמנית ובדפוס","מרכז מבקרים עם תערוכת פתיחה וסרטון, ואחריו סיורים מודרכים"],
+ co:"המנזר באותה עיירה של שוק גרין דרגון (5), ולכן קל לשלב ביניהם ביום שישי.",
+ tip:"",anchor:""},
+o3:{k:"עוד אטרקציות · לנקסטר",t:"וויטלנד (Wheatland)",ch:"ביתו של הנשיא ביוקנן, בקצה מרכז העיר",
+ hl:["ביתו של ג'יימס ביוקנן, הנשיא ה-15 של ארצות הברית","הכניסה לבית רק בסיור מודרך בכרטיס, והסיורים יוצאים מהמוזיאון שלידו"],
+ co:"קרוב למרכז העיר לנקסטר, ולכן קל לשלב עם ביקור בעיר.",
+ tip:"כדאי להזמין כרטיס מראש באתר, ולבדוק את לוח הסיורים, כי הוא משתנה בין העונות.",anchor:""},
+o4:{k:"עוד אטרקציות · מאונט ג'וי",t:"מבשלת בובס (Bube's Brewery)",ch:"מבשלת בירה היסטורית מהמאה ה-19",
+ hl:["מסעדות באווירה מיוחדת","למי שמחפשים בילוי למבוגרים"],
+ co:"יקב ניסלי (Nissley Vineyards) בבינברידג' כולל חדר טעימות ואפשרות לשבת בחוץ. הוא לא מסומן במפה.",
+ tip:"כדאי לבדוק מראש שעות פעילות ואפשרות לסיור.",anchor:""},
+l1:{k:"לינה · רונקס",t:"רד קבוז מוטל (Red Caboose Motel)",ch:"לישון בקרון רכבת",
+ hl:["קרונות רכבת ישנים מסוג קבוז (caboose), הקרון האחרון ברכבת משא","בכל קרון: שירותים ומקלחת פרטיים, מקרר, מיקרוגל ואינטרנט אלחוטי","במסעדה יושבים בקרונות אוכל ישנים ורואים את הרכבות יוצאות מהתחנה"],
+ co:"במתחם פרדייז סטיישן, לצד המסילה של רכבת הקיטור (7). מתאים במיוחד למשפחות עם ילדים שאוהבים רכבות.",
+ tip:"כדאי לבדוק מראש איזה סוג קרון מתאים למשפחה ולשמור מקום בהתאם.",anchor:""},
+l2:{k:"לינה · לנקסטר",t:"האמפטון אין לנקסטר (Hampton Inn Lancaster)",ch:"בסיס נוח לנסיעות באזור",
+ hl:["מלון משרשרת האמפטון, ברחוב גרינפילד ליד כביש 30","כ-5 דקות נסיעה מהמרכז של לנקסטר"],
+ co:"נקודת מוצא נוחה לנסיעות באזור. זה מלון מוכר של רשת, בלי אופי ייחודי לאזור.",
+ tip:"",anchor:""}
 };
 
 
-var ORDER_A=["a1","a2","a3","a4","a5","a6"], ORDER_T=["t1","t2","t3","t4"];
+var ORDER_A=["a1","a2","a3","a4","a5","a6","a7","a8"], ORDER_T=["t1","t2","t3","t4","t5"], ORDER_O=["o1","o2","o3","o4"], ORDER_L=["l1","l2"];
 
 /* ---------- map ---------- */
 var map=L.map("map",{attributionControl:false,scrollWheelZoom:false,dragging:!L.Browser.mobile,tap:false,zoomSnap:0.5});
@@ -208,12 +276,18 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:17,attribu
 L.control.attribution({prefix:false}).addTo(map);
 var all=[],core=[];
 var bdEl={},twEl={},markers={},zone=null,poiLayer={};
-function mk(id,latlng,cls,html,size,title){
-  var m=L.marker(latlng,{icon:L.divIcon({className:"",html:'<div class="'+cls+'">'+html+'</div>',iconSize:size,iconAnchor:[size[0]/2,size[1]/2]}),title:title,keyboard:true,riseOnHover:true});
+function mk(id,latlng,cls,html,size,title,off){
+  off=off||[0,0];
+  var m=L.marker(latlng,{icon:L.divIcon({className:"",html:'<div class="'+cls+'">'+html+'</div>',iconSize:size,iconAnchor:[size[0]/2-off[0],size[1]/2-off[1]]}),title:title,keyboard:true,riseOnHover:true});
   m.on("click",function(){toggle(id);});m.addTo(map);markers[id]=m;all.push(latlng);return m;}
+/* שם מרחף במעבר עכבר (לא במכשירי מגע, שם הלחיצה פותחת כרטיס) */
+function hover(m,name,up,off){if(L.Browser.mobile)return;off=off||[0,0];
+  m.bindTooltip(name,{direction:"top",offset:[off[0],off[1]-up],className:"pl hv",opacity:1});}
+function lab(m,txt){function s(){var e=m.getElement();if(e){e.setAttribute("aria-label",txt);e.setAttribute("role","button");}}s();m.on("add",s);}
 /* אזור כרכרות */
 zone=L.circle(ATT[4].pos,{radius:ATT[4].zoneR,color:"#2f9e6b",weight:2,dashArray:"7 6",fillColor:"#5fbf8f",fillOpacity:.28}).addTo(map);
 zone.on("click",function(){toggle("a4");});
+if(!L.Browser.mobile){zone.bindTooltip("4. כרכרות (אזור כללי)",{sticky:true,direction:"top",className:"pl hv",opacity:1});}
 /* עיירות */
 ORDER_T.forEach(function(id){var t=TOWN[id];
   var m=mk(id,t.p,"tw","",[20,20],"עיירה: "+t.n);if(!t.edge)core.push(t.p);
@@ -224,8 +298,11 @@ POI.forEach(function(o){
   c.bindTooltip(o.n,{permanent:true,direction:o.d||"top",offset:o.d==="bottom"?[0,8]:o.d==="right"?[10,0]:o.d==="left"?[-10,0]:[0,-8],className:"pl"});
   (poiLayer[o.t]=poiLayer[o.t]||L.layerGroup()).addLayer(c);});
 /* אטרקציות */
-[1,2,3,4,5,6].forEach(function(n){var a=ATT[n],id="a"+n;
-  mk(id,a.pos,"bd",String(n),[34,34],"אטרקציה "+n+": "+a.short);if(n!==5)core.push(a.pos);});
+[1,2,3,4,5,6,7,8].forEach(function(n){var a=ATT[n],id="a"+n;
+  var m=mk(id,a.pos,"bd",String(n),[34,34],"",a.off);hover(m,n+". "+a.short,22,a.off);lab(m,"אטרקציה "+n+": "+a.short);if(n!==5)core.push(a.pos);});
+/* עוד אטרקציות ולינה */
+ORDER_O.concat(ORDER_L).forEach(function(id){var x=EXTRA[id];
+  var m=mk(id,x.pos,"bd "+(x.g==="o"?"ox":"lg"),x.sym,[30,30],"");hover(m,x.short,20);lab(m,(x.g==="o"?"עוד אטרקציה: ":"לינה: ")+x.short);if(x.core)core.push(x.pos);});
 var overview=L.latLngBounds(core);
 function home(){map.flyToBounds(overview,{padding:[56,56],duration:.6});}
 map.fitBounds(overview,{padding:[56,56]});
@@ -234,10 +311,13 @@ function el(id){var m=markers[id];return m&&m.getElement()?m.getElement().firstC
 /* ---------- chips + panel ---------- */
 var chipEls={};
 function mkChip(parent,id,num){var li=document.createElement("li"),b=document.createElement("button");b.type="button";b.className="chip";b.setAttribute("aria-pressed","false");
-  b.innerHTML=(num?"<b>"+num+"</b>":"<i></i>")+"<span></span>";b.lastChild.textContent=(num?ATT[num].short:TOWN[id].n);
+  var ex=EXTRA[id];
+  b.innerHTML=(ex?"<b class=\""+(ex.g==="o"?"ox":"lg")+"\">"+ex.sym+"</b>":num?"<b>"+num+"</b>":"<i></i>")+"<span></span>";b.lastChild.textContent=(ex?ex.short:num?ATT[num].short:TOWN[id].n);
   b.addEventListener("click",function(){toggle(id);});li.appendChild(b);parent.appendChild(li);chipEls[id]=b;}
 ORDER_A.forEach(function(id){mkChip(document.getElementById("chipsA"),id,id.slice(1));});
 ORDER_T.forEach(function(id){mkChip(document.getElementById("chipsT"),id,0);});
+ORDER_O.forEach(function(id){mkChip(document.getElementById("chipsO"),id,0);});
+ORDER_L.forEach(function(id){mkChip(document.getElementById("chipsL"),id,0);});
 var panel=document.getElementById("panel");
 var mq=window.matchMedia("(max-width:480px)"),mapbox=document.querySelector(".mapbox"),foot=document.querySelector(".foot");
 function place(){if(mq.matches){if(panel.parentNode!==mapbox)mapbox.appendChild(panel);}else if(panel.parentNode!==foot.parentNode){foot.parentNode.insertBefore(panel,foot);}map.invalidateSize();}
@@ -269,7 +349,7 @@ function select(id){
   if(!id){home();}
   else if(id==="a4"){map.flyToBounds(zone.getBounds(),{padding:[40,40],paddingBottomRight:pad(),duration:.6});}
   else if(id.charAt(0)==="t"){var pts=[TOWN[id].p];POI.forEach(function(o){if(o.t===id)pts.push(o.p);});map.flyToBounds(L.latLngBounds(pts),{paddingTopLeft:[80,60],paddingBottomRight:mq.matches?[80,Math.round(document.getElementById("map").clientHeight*0.5)]:[80,60],maxZoom:TOWN[id].z,duration:.6});}
-  else{var ap=ATT[id.slice(1)].pos;map.flyToBounds(L.latLngBounds([ap,ap]),{maxZoom:ATT[id.slice(1)].z,paddingBottomRight:pad(),duration:.6});}
+  else{var ap=EXTRA[id]?EXTRA[id].pos:ATT[id.slice(1)].pos,az=EXTRA[id]?EXTRA[id].z:ATT[id.slice(1)].z;map.flyToBounds(L.latLngBounds([ap,ap]),{maxZoom:az,paddingBottomRight:pad(),duration:.6});}
 }
 render(null);
 place();if(mq.addEventListener){mq.addEventListener("change",place);}else if(mq.addListener){mq.addListener(place);}
