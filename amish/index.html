@@ -345,7 +345,7 @@ function select(id){
   Object.keys(poiLayer).forEach(function(t){map.removeLayer(poiLayer[t]);});
   if(id&&id.charAt(0)==="t"){poiLayer[id]&&poiLayer[id].addTo(map);TOWN[id].rel.forEach(function(n){var e=el("a"+n);if(e)e.classList.add("rel");});}
   render(id);
-  if(id&&mq.matches){setTimeout(function(){mapbox.scrollIntoView({behavior:"smooth",block:"start"});},60);}
+  if(id&&mq.matches){setTimeout(function(){var y=Math.round(mapbox.getBoundingClientRect().top+window.scrollY);if(window.parent!==window){parent.postMessage({type:"usa-amish-scroll",y:y},"*");}else{mapbox.scrollIntoView({behavior:"smooth",block:"start"});}},60);}
   if(!id){home();}
   else if(id==="a4"){map.flyToBounds(zone.getBounds(),{padding:[40,40],paddingBottomRight:pad(),duration:.6});}
   else if(id.charAt(0)==="t"){var pts=[TOWN[id].p];POI.forEach(function(o){if(o.t===id)pts.push(o.p);});map.flyToBounds(L.latLngBounds(pts),{paddingTopLeft:[80,60],paddingBottomRight:mq.matches?[80,Math.round(document.getElementById("map").clientHeight*0.5)]:[80,60],maxZoom:TOWN[id].z,duration:.6});}
