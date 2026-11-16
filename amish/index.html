@@ -358,8 +358,8 @@ window.addEventListener("resize",function(){map.invalidateSize();if(!current)map
 </script>
 <script>
 // מעדכן את הדף המארח בגובה הכלי (סוג ההודעה: usa-amish-height)
-(function(){var last=0;function send(){var w=document.querySelector(".wrap");var h=Math.ceil(w.getBoundingClientRect().bottom+window.scrollY)+8;if(h!==last){last=h;parent.postMessage({type:"usa-amish-height",h:h},"*");}}
-if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector(".wrap"));}window.addEventListener("load",send);document.addEventListener("click",function(){setTimeout(send,50);});send();})();
+(function(){var last=0;function send(force){var w=document.querySelector(".wrap");var h=Math.ceil(w.getBoundingClientRect().bottom+window.scrollY)+8;if(force||h!==last){last=h;parent.postMessage({type:"usa-amish-height",h:h},"*");}}
+if(window.ResizeObserver){new ResizeObserver(function(){send();}).observe(document.querySelector(".wrap"));}window.addEventListener("load",send);document.addEventListener("click",function(){setTimeout(send,50);});send();setInterval(function(){send(true);},1500);})();
 </script>
 </body>
 </html>
